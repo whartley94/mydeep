@@ -130,6 +130,11 @@ class ColorizeImageBase():
 
         return lab2rgb_transpose(self.img_l_fullres, output_ab_fullres)
 
+    def get_img_ab(self):
+        neurta = np.zeros_like(self.img_l)
+        neurta += 30
+        return lab2rgb_transpose(neurta, self.output_ab)
+
     def get_input_img_fullres(self):
         zoom_factor = (1, 1. * self.img_l_fullres.shape[1] / self.input_ab.shape[1], 1. * self.img_l_fullres.shape[2] / self.input_ab.shape[2])
         input_ab_fullres = zoom(self.input_ab, zoom_factor, order=1)
@@ -149,7 +154,19 @@ class ColorizeImageBase():
         return lab2rgb_transpose(100. * (1 - input_mask_fullres), np.zeros((2, input_mask_fullres.shape[1], input_mask_fullres.shape[2])))
 
     def get_sup_img(self):
-        return lab2rgb_transpose(50 * self.input_mask, self.input_ab)
+        skmask = self.input_mask
+        skmask = skmask / 255
+        skmask = skmask - 0.5
+        skmask = skmask * 100
+        # print(skmask)
+        # min = -4
+        # skmask = skmask-min
+        # max = 5
+        # skmask = skmask/max
+        # # print(skmask)
+        # skmask = skmask * 50
+        # return lab2rgb_transpose(50 * self.input_mask, self.input_ab)
+        return lab2rgb_transpose(skmask, self.input_ab)
 
     def get_sup_fullres(self):
         zoom_factor = (1, 1. * self.img_l_fullres.shape[1] / self.output_ab.shape[1], 1. * self.img_l_fullres.shape[2] / self.output_ab.shape[2])

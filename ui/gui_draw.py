@@ -14,6 +14,7 @@ import os
 import datetime
 import glob
 import sys
+import matplotlib.pyplot as plt
 
 
 class GUIDraw(QWidget):
@@ -39,6 +40,8 @@ class GUIDraw(QWidget):
         self.total_images = 0
         self.image_id = 0
         self.method = 'with_dist'
+        self.histogram_bins = np.zeros((255,255,255))
+        self.histogram_bins += 1
 
     def clock_count(self):
         self.count_secs -= 1
@@ -49,7 +52,7 @@ class GUIDraw(QWidget):
         self.reset()
 
     def get_batches(self, img_dir):
-        self.img_list = glob.glob(os.path.join(img_dir, '*.JPEG'))
+        self.img_list = glob.glob(os.path.join(img_dir, '*.JPG'))
         self.total_images = len(self.img_list)
         img_first = self.img_list[0]
         self.init_result(img_first)
@@ -133,6 +136,27 @@ class GUIDraw(QWidget):
                     is_predict = True
                     # self.predict_color()
 
+        if self.ui_mode == 'weighted_point':
+            # rgb = np.asarray([snap_qcolor.red(), snap_qcolor.green(), snap_qcolor.blue()])
+            # rgb = np.array((snap_qcolor.red(), snap_qcolor.green(), snap_qcolor.blue()), np.uint8)
+            # print(lab_gamut.rgb2lab_1d(rgb))
+            # print('snapq', snap_qcolor.red(), snap_qcolor.green(), snap_qcolor.blue())
+            uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
+            print('User Colour Tried', uc)
+            if move_point:
+                self.uiControl.movePoint(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
+            else:
+                # self.mask_weight = 1
+                print('HGBIN', self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
+                self.mask_weight = self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1]
+                # print(QString('background-color: %s' % self.color.name()))
+                self.user_color, self.brushWidth, isNew, self.mask_weight = self.uiControl.addPoint(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
+                if isNew:
+                    is_predict = True
+                    # self.predict_color()
+            # print self.brushWidth
+            self.emit(SIGNAL('update_slider_position'), self.mask_weight)
+
         if self.ui_mode == 'stroke':
             self.uiControl.addStroke(self.prev_pos, self.pos, snap_qcolor, self.user_color, self.brushWidth)
         if self.ui_mode == 'erase':
@@ -148,6 +172,7 @@ class GUIDraw(QWidget):
         self.result = None
         self.user_color = None
         self.color = None
+        self.mask_weight = None
         self.uiControl.reset()
         self.init_color()
         self.compute_result()
@@ -212,6 +237,12 @@ class GUIDraw(QWidget):
         self.uiControl.update_color(snap_qcolor, self.user_color)
         self.compute_result()
 
+    def set_weighted_mask(self, mask_weight):
+        uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
+        self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1] = mask_weight
+        self.uiControl.update_mask_weight(self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
+        self.compute_result()
+
     def erase(self):
         self.eraseMode = not self.eraseMode
 
@@ -235,13 +266,27 @@ class GUIDraw(QWidget):
         np.save(os.path.join(save_path, 'im_mask.npy'), self.im_mask0)
 
         result_bgr = cv2.cvtColor(self.result, cv2.COLOR_RGB2BGR)
-        mask = self.im_mask0.transpose((1, 2, 0)).astype(np.uint8) * 255
+        mask = self.im_mask0.transpose((1, 2, 0))
+        min = -4
+        mask -= min
+        max = 5
+        mask /= max
+        mask *= 255
+        # print(mask)
+        mask = mask.astype(np.uint8)
+        # print(mask)
+        # mask[mask==0] = 255
+        # print(self.model.get_sup_img()[:, :, ::-1])
+        # input_ab = self.model.get_sup_img()[:, :, ::-1]
+        # input_ab[input_ab==0] =
         cv2.imwrite(os.path.join(save_path, 'input_mask.png'), mask)
         cv2.imwrite(os.path.join(save_path, 'ours.png'), result_bgr)
         cv2.imwrite(os.path.join(save_path, 'ours_fullres.png'), self.model.get_img_fullres()[:, :, ::-1])
         cv2.imwrite(os.path.join(save_path, 'input_fullres.png'), self.model.get_input_img_fullres()[:, :, ::-1])
         cv2.imwrite(os.path.join(save_path, 'input.png'), self.model.get_input_img()[:, :, ::-1])
         cv2.imwrite(os.path.join(save_path, 'input_ab.png'), self.model.get_sup_img()[:, :, ::-1])
+        # get_img_ab
+        cv2.imwrite(os.path.join(save_path, 'ours_ab.png'), self.model.get_img_ab()[:, :, ::-1])
 
     def enable_gray(self):
         self.use_gray = not self.use_gray
@@ -250,7 +295,8 @@ class GUIDraw(QWidget):
     def predict_color(self):
         if self.dist_model is not None and self.image_loaded:
             im, mask = self.uiControl.get_input()
-            im_mask0 = mask > 0.0
+            # im_mask0 = mask > 0.0
+            im_mask0 = mask
             self.im_mask0 = im_mask0.transpose((2, 0, 1))
             im_lab = color.rgb2lab(im).transpose((2, 0, 1))
             self.im_ab0 = im_lab[1:3, :, :]
@@ -271,10 +317,15 @@ class GUIDraw(QWidget):
 
     def compute_result(self):
         im, mask = self.uiControl.get_input()
-        im_mask0 = mask > 0.0
+        # im_mask0 = mask > 0.0
+        im_mask0 = mask
         self.im_mask0 = im_mask0.transpose((2, 0, 1))
         im_lab = color.rgb2lab(im).transpose((2, 0, 1))
         self.im_ab0 = im_lab[1:3, :, :]
+
+        # print(im_mask0.shape)
+        # plt.imshow(im_mask0[:, :, 0])
+        # plt.show()
 
         self.model.net_forward(self.im_ab0, self.im_mask0)
         ab = self.model.output_ab.transpose((1, 2, 0))
@@ -325,7 +376,7 @@ class GUIDraw(QWidget):
         if pos is not None:
             if event.button() == Qt.LeftButton:
                 self.pos = pos
-                self.ui_mode = 'point'
+                self.ui_mode = 'weighted_point'
                 self.change_color(pos)
                 self.update_ui(move_point=False)
                 self.compute_result()
@@ -340,7 +391,7 @@ class GUIDraw(QWidget):
     def mouseMoveEvent(self, event):
         self.pos = self.valid_point(event.pos())
         if self.pos is not None:
-            if self.ui_mode == 'point':
+            if self.ui_mode == 'weighted_point':
                 self.update_ui(move_point=True)
                 self.compute_result()
 

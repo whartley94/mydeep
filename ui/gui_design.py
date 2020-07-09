@@ -31,6 +31,24 @@ class GUIDesign(QWidget):
         upLayout = self.AddWidget(self.usedPalette, 'Recently used colors')
         colorLayout.addLayout(upLayout)
 
+        sliderBox = QHBoxLayout()
+
+        self.slider_value = QLabel()
+        self.slider_value.setText('0')
+        sliderLayout = self.AddWidget(self.slider_value, 'Value')
+        sliderBox.addLayout(sliderLayout)
+
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setTickInterval(256*256*10*4)
+        self.slider.setRange(-256*256*256*4, 256*256*256*4)
+        self.slider.setTickPosition(50000)
+        self.slider.setFixedWidth(self.customPalette.width())
+        self.slider.setFixedHeight(25)
+        # self.slider.setStyleSheet("background-color: grey")
+        sliderLayout = self.AddWidget(self.slider, 'Portion')
+        sliderBox.addLayout(sliderLayout)
+        colorLayout.addLayout(sliderBox)
+
         self.colorPush = QPushButton()  # to visualize the selected color
         self.colorPush.setFixedWidth(self.customPalette.width())
         self.colorPush.setFixedHeight(25)
@@ -79,6 +97,11 @@ class GUIDesign(QWidget):
         self.drawWidget.update()
         self.visWidget.update()
         self.colorPush.clicked.connect(self.drawWidget.change_color)
+
+        self.slider.sliderReleased.connect(self.set_mask_weight)
+        self.slider.valueChanged.connect(self.slider_value_change)
+        # self.slider.sliderReleased.connect(self.slider_value_change)
+        self.connect(self.drawWidget, SIGNAL('update_slider_position'), self.slider_value_set)
         # color indicator
         self.connect(self.drawWidget, SIGNAL('update_color'), self.colorPush.setStyleSheet)
         # update result
@@ -125,6 +148,18 @@ class GUIDesign(QWidget):
     def nextImage(self):
         self.drawWidget.nextImage()
 
+    def slider_value_change(self):
+        size = self.slider.value()
+        self.slider_value.setText(str(round(float(size)/(256*256*256), 3)))
+
+    def slider_value_set(self, test):
+        self.slider.setValue(test)
+        # print(test)
+        self.slider_value_change()
+
+    def set_mask_weight(self):
+        self.drawWidget.set_weighted_mask(self.slider.value())
+
     def reset(self):
         # self.start_t = time.time()
         print('============================reset all=========================================')
@@ -146,9 +181,13 @@ class GUIDesign(QWidget):
     def save(self):
         print('time spent = %3.3f' % (time.time() - self.start_t))
         self.drawWidget.save_result()
+        # self.drawWidget.nextImage()
 
     def load(self):
         self.drawWidget.load_image()
+        # imgs_path = unicode(QFileDialog.getExistingDirectory(self, 'load an folder'))
+        # print(imgs_path)
+        # self.drawWidget.get_batches(imgs_path)
 
     def change_color(self):
         print('change color')

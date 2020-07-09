@@ -77,7 +77,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = gui_design.GUIDesign(color_model=colorModel, dist_model=distModel,
                                   img_file=args.image_file, load_size=args.load_size, win_size=args.win_size)
-    app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))  # comment this if you do not like dark stylesheet
+    # app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))  # comment this if you do not like dark stylesheet
     app.setWindowIcon(QIcon('imgs/logo.png'))  # load logo
     window.setWindowTitle('iColor')
     window.setWindowFlags(window.windowFlags() & ~Qt.WindowMaximizeButtonHint)   # fix window siz

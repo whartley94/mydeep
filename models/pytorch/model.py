@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 
 
 class SIGGRAPHGenerator(nn.Module):
@@ -140,6 +141,10 @@ class SIGGRAPHGenerator(nn.Module):
         input_B = torch.Tensor(input_B)[None, :, :, :]
         mask_B = torch.Tensor(mask_B)[None, :, :, :]
         mask_B = mask_B - maskcent
+
+        # print('maskB', mask_B.shape)
+        # plt.imshow(mask_B[0, 0, :, :])
+        # plt.show()
         
         # input_A = torch.Tensor(input_A).cuda()[None, :, :, :]
         # input_B = torch.Tensor(input_B).cuda()[None, :, :, :]

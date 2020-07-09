@@ -2,6 +2,7 @@ import numpy as np
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import cv2
+import matplotlib.pyplot as plt
 
 
 class UserEdit(object):
@@ -82,7 +83,68 @@ class PointEdit(UserEdit):
             painter.setPen(QPen(Qt.white, 1))
         painter.setBrush(ca)
         painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
+class WeightedPointEdit(UserEdit):
+    def __init__(self, win_size, load_size, img_size):
+        UserEdit.__init__(self, 'weighted_point', win_size, load_size, img_size)
 
+    def add(self, pnt, color, userColor, width, ui_count, mask_weight):
+        self.pnt = pnt
+        self.color = color
+        self.userColor = userColor
+        self.width = width
+        self.ui_count = ui_count
+        self.mask_weight = mask_weight
+
+    def select_old(self, pnt, ui_count):
+        self.pnt = pnt
+        self.ui_count = ui_count
+        return self.userColor, self.width, self.mask_weight
+
+    def update_color(self, color, userColor):
+        self.color = color
+        self.userColor = userColor
+
+    def update_mask_weight(self, mask_weight):
+        self.mask_weight = mask_weight
+
+    def updateInput(self, im, mask, vis_im):
+        w = int(self.width / self.scale)
+        w =0
+        pnt = self.pnt
+        x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
+        tl = (x1, y1)
+        x2, y2 = self.scale_point(pnt.x(), pnt.y(), w)
+        br = (x2, y2)
+        c = (self.color.red(), self.color.green(), self.color.blue())
+        uc = (self.userColor.red(), self.userColor.green(), self.userColor.blue())
+        # print('gg', c)
+        # print('ss', uc)
+        mask_c = float(self.mask_weight)/(256*256*256)
+        # print(mask_c)
+        cv2.rectangle(mask, tl, br, mask_c, -1)
+        cv2.rectangle(im, tl, br, c, -1)
+        cv2.rectangle(vis_im, tl, br, uc, -1)
+
+    def is_same(self, pnt):
+        dx = abs(self.pnt.x() - pnt.x())
+        dy = abs(self.pnt.y() - pnt.y())
+        return dx <= self.width + 1 and dy <= self.width + 1
+
+    def update_painter(self, painter):
+        w = max(3, self.width)
+        c = self.color
+        r = c.red()
+        g = c.green()
+        b = c.blue()
+        ca = QColor(c.red(), c.green(), c.blue(), 255)
+        d_to_black = r * r + g * g + b * b
+        d_to_white = (255 - r) * (255 - r) + (255 - g) * (255 - g) + (255 - r) * (255 - r)
+        if d_to_black > d_to_white:
+            painter.setPen(QPen(Qt.black, 1))
+        else:
+            painter.setPen(QPen(Qt.white, 1))
+        painter.setBrush(ca)
+        painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
 
 class UIControl:
     def __init__(self, win_size=256, load_size=512):
@@ -109,7 +171,8 @@ class UIControl:
                 break
         return isErase
 
-    def addPoint(self, pnt, color, userColor, width):
+    # def addPoint(self, pnt, color, userColor, width):
+    def addPoint(self, pnt, color, userColor, width, mask_weight):
         self.ui_count += 1
         print('process add Point')
         self.userEdit = None
@@ -122,20 +185,41 @@ class UIControl:
                 break
 
         if self.userEdit is None:
-            self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
+            self.userEdit = WeightedPointEdit(self.win_size, self.load_size, self.img_size)
+            # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
             self.userEdits.append(self.userEdit)
             print('add user edit %d\n' % len(self.userEdits))
-            self.userEdit.add(pnt, color, userColor, width, self.ui_count)
-            return userColor, width, isNew
+            # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+            self.userEdit.add(pnt, color, userColor, width, self.ui_count, mask_weight)
+            # return userColor, width, isNew
+            return userColor, width, isNew, mask_weight
         else:
-            userColor, width = self.userEdit.select_old(pnt, self.ui_count)
-            return userColor, width, isNew
+            # userColor, width = self.userEdit.select_old(pnt, self.ui_count)
+            userColor, width, mask_weight = self.userEdit.select_old(pnt, self.ui_count)
+            # return userColor, width, isNew
+            return userColor, width, isNew, mask_weight
 
-    def movePoint(self, pnt, color, userColor, width):
-        self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+    # def movePoint(self, pnt, color, userColor, width):
+    def movePoint(self, pnt, color, userColor, width, mask_weight):
+        # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+        self.userEdit.add(pnt, color, userColor, width, self.ui_count, mask_weight)
 
     def update_color(self, color, userColor):
         self.userEdit.update_color(color, userColor)
+
+    def update_mask_weight(self, mask_weight):
+        # Put for loop here over all user edits??
+        self.userEdit.update_mask_weight(mask_weight)
+        edit_Col = (self.userEdit.userColor.red(), self.userEdit.userColor.green(), self.userEdit.userColor.blue())
+        # print('EditCol', edit_Col)
+        for id, ue in enumerate(self.userEdits):
+            # print(ue.userColor)
+            uc = (ue.userColor.red(), ue.userColor.green(), ue.userColor.blue())
+            # print('EditCol', edit_Col)
+            # print('UC', uc)
+            # print(uc == edit_Col)
+            if uc == edit_Col:
+                ue.update_mask_weight(mask_weight)
 
     def update_painter(self, painter):
         for ue in self.userEdits:
@@ -178,12 +262,17 @@ class UIControl:
         h = self.load_size
         w = self.load_size
         im = np.zeros((h, w, 3), np.uint8)
-        mask = np.zeros((h, w, 1), np.uint8)
+        # mask = np.zeros((h, w, 1), np.uint8)
+        mask = np.zeros((h, w, 1))
+        mask -= 0.5
         vis_im = np.zeros((h, w, 3), np.uint8)
 
         for ue in self.userEdits:
             ue.updateInput(im, mask, vis_im)
 
+        # for i in mask.flatten():
+        #     if i != -0.5:
+        #         print i
         return im, mask
 
     def reset(self):
