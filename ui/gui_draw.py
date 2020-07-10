@@ -15,6 +15,7 @@ import datetime
 import glob
 import sys
 import matplotlib.pyplot as plt
+import copy
 
 
 class GUIDraw(QWidget):
@@ -264,27 +265,36 @@ class GUIDraw(QWidget):
         np.save(os.path.join(save_path, 'im_l.npy'), self.model.img_l)
         np.save(os.path.join(save_path, 'im_ab.npy'), self.im_ab0)
         np.save(os.path.join(save_path, 'im_mask.npy'), self.im_mask0)
+        output_file = open(os.path.join(save_path, 'bins.txt'), 'w')
+        nz_indexes = np.where(self.histogram_bins!=1)
+        nz_values = self.histogram_bins[self.histogram_bins!=1]
+        output_file.writelines(str(nz_indexes))
+        output_file.writelines(str(nz_values/(255*255*255)))
+        output_file.close()
+
+
 
         result_bgr = cv2.cvtColor(self.result, cv2.COLOR_RGB2BGR)
         mask = self.im_mask0.transpose((1, 2, 0))
+        my_mask = copy.deepcopy(mask)
         min = -4
-        mask -= min
+        my_mask -= min
         max = 5
-        mask /= max
-        mask *= 255
+        my_mask /= max
+        my_mask *= 255
         # print(mask)
-        mask = mask.astype(np.uint8)
+        my_mask = my_mask.astype(np.uint8)
         # print(mask)
         # mask[mask==0] = 255
         # print(self.model.get_sup_img()[:, :, ::-1])
         # input_ab = self.model.get_sup_img()[:, :, ::-1]
         # input_ab[input_ab==0] =
-        cv2.imwrite(os.path.join(save_path, 'input_mask.png'), mask)
+        cv2.imwrite(os.path.join(save_path, 'input_mask.png'), my_mask)
         cv2.imwrite(os.path.join(save_path, 'ours.png'), result_bgr)
         cv2.imwrite(os.path.join(save_path, 'ours_fullres.png'), self.model.get_img_fullres()[:, :, ::-1])
         cv2.imwrite(os.path.join(save_path, 'input_fullres.png'), self.model.get_input_img_fullres()[:, :, ::-1])
         cv2.imwrite(os.path.join(save_path, 'input.png'), self.model.get_input_img()[:, :, ::-1])
-        cv2.imwrite(os.path.join(save_path, 'input_ab.png'), self.model.get_sup_img()[:, :, ::-1])
+        cv2.imwrite(os.path.join(save_path, 'input_ab.png'), self.model.get_soup()[:, :, ::-1])
         # get_img_ab
         cv2.imwrite(os.path.join(save_path, 'ours_ab.png'), self.model.get_img_ab()[:, :, ::-1])
 

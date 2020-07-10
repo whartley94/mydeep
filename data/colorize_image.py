@@ -5,6 +5,7 @@ from skimage import color
 from sklearn.cluster import KMeans
 import os
 from scipy.ndimage.interpolation import zoom
+import copy
 
 
 def create_temp_directory(path_template, N=1e8):
@@ -132,8 +133,13 @@ class ColorizeImageBase():
 
     def get_img_ab(self):
         neurta = np.zeros_like(self.img_l)
-        neurta += 30
-        return lab2rgb_transpose(neurta, self.output_ab)
+        neurta += 20
+        # print(self.output_ab)
+        # np.save('OutAB2', self.output_ab)
+        out = lab2rgb_transpose(neurta, self.output_ab)
+        # plt.imshow(out)
+        # plt.show()
+        return 255-out
 
     def get_input_img_fullres(self):
         zoom_factor = (1, 1. * self.img_l_fullres.shape[1] / self.input_ab.shape[1], 1. * self.img_l_fullres.shape[2] / self.input_ab.shape[2])
@@ -155,9 +161,34 @@ class ColorizeImageBase():
 
     def get_sup_img(self):
         skmask = self.input_mask
-        skmask = skmask / 255
-        skmask = skmask - 0.5
-        skmask = skmask * 100
+        # print(skmask)
+        # # skmask[skmask==20] = 100
+        # # skmask = skmask / 255
+        # # skmask = skmask - 0.5
+        # # skmask = skmask * 100
+        # skmask[skmask==-0.5] = 100
+        # skmask[skmask!=100] = 50
+        #
+        # print(skmask)
+        # # min = -4
+        # # skmask = skmask-min
+        # # max = 5
+        # # skmask = skmask/max
+        # # # print(skmask)
+        # # skmask = skmask * 50
+        # # return lab2rgb_transpose(50 * self.input_mask, self.input_ab)
+        return lab2rgb_transpose(skmask, self.input_ab)
+
+    def get_soup(self):
+        skmask = copy.deepcopy(self.input_mask)
+        # print(skmask)
+        # skmask[skmask==20] = 100
+        # skmask = skmask / 255
+        # skmask = skmask - 0.5
+        # skmask = skmask * 100
+        skmask[skmask==-0.5] = 100
+        skmask[skmask!=100] = 50
+
         # print(skmask)
         # min = -4
         # skmask = skmask-min
