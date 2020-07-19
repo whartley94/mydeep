@@ -264,7 +264,7 @@ class UIControl:
         im = np.zeros((h, w, 3), np.uint8)
         # mask = np.zeros((h, w, 1), np.uint8)
         mask = np.zeros((h, w, 1))
-        mask -= 0.5
+        mask -= 1
         vis_im = np.zeros((h, w, 3), np.uint8)
 
         for ue in self.userEdits:
