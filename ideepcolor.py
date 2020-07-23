@@ -66,10 +66,10 @@ if __name__ == '__main__':
         distModel.prep_net(args.gpu, args.dist_prototxt, args.dist_caffemodel)
     elif args.backend == 'pytorch':
         colorModel = CI.ColorizeImageTorch(Xd=args.load_size,maskcent=args.pytorch_maskcent)
-        colorModel.prep_net(path=args.color_model)
+        colorModel.prep_net(gpu_id=args.gpu, path=args.color_model)
 
         distModel = CI.ColorizeImageTorchDist(Xd=args.load_size,maskcent=args.pytorch_maskcent)
-        distModel.prep_net(path=args.color_model, dist=True)
+        distModel.prep_net(gpu_id=args.gpu, path=args.color_model, dist=True)
     else:
         print('backend type [%s] not found!' % args.backend)
 

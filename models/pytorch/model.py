@@ -145,7 +145,20 @@ class SIGGRAPHGenerator(nn.Module):
         # print('maskB', mask_B.shape)
         # plt.imshow(mask_B[0, 0, :, :])
         # plt.show()
-        
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # print('Device ', device)
+
+        input_A, input_B = input_A.to(device), input_B.to(device)
+        mask_B = mask_B.to(device)
+
+        # print(type(input_A))
+        # print(type(input_B))
+        # print(type(mask_B))
+        # print(input_A.type())
+        # print(input_B.type())
+        # print(mask_B.type())
+
         # input_A = torch.Tensor(input_A).cuda()[None, :, :, :]
         # input_B = torch.Tensor(input_B).cuda()[None, :, :, :]
         # mask_B = torch.Tensor(mask_B).cuda()[None, :, :, :]
