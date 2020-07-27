@@ -165,9 +165,17 @@ class GUIDraw(QWidget):
             self.emit(SIGNAL('update_slider_position'), self.mask_weight)
 
         if self.ui_mode == 'stroke':
+            uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
             if move_point:
                 self.uiControl.continueStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth)
             else:
+                if self.my_mask_cent == 0:
+                    self.mask_weight = 1 * (255**3)
+                elif self.my_mask_cent == 1:
+                    print('HGBIN', self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
+                    self.mask_weight = self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1]
+                else:
+                    assert self.my_mask_cent == 0 or self.my_mask_cent == 1, 'Non-valid my_mask_cent used'
                 self.uiControl.startStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
             is_predict = True
         if self.ui_mode == 'erase':

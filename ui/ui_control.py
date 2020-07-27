@@ -203,26 +203,55 @@ class StrokeEdit(UserEdit):
         # cv2.polylines(im, [convert_pts], False, c, 1)
         # cv2.polylines(vis_im, [convert_pts], False, uc, 1)
         convert_pts = convert_pts[::10, :]
-        for i in range(convert_pts.shape[0]):
-            tl = (convert_pts[i, 0], convert_pts[i, 1])
-            cv2.rectangle(im, tl, tl, c, -1)
-            cv2.rectangle(vis_im, tl, tl, uc, -1)
-            cv2.rectangle(mask, tl, tl, float(0.5)/(256*256*256), -1)
-
-
-        # plt.imshow(im)
-        # plt.show()
-        if self.mask_weight:
-            mask_c = float(self.mask_weight)/(256*256*256)
+        if len(convert_pts) <= 2:
+            pnt = self.pnts.point(0)
+            x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
+            tl = (x1, y1)
+            x2, y2 = self.scale_point(pnt.x(), pnt.y(), w)
+            br = (x2, y2)
+            c = (self.color.red(), self.color.green(), self.color.blue())
+            uc = (self.userColor.red(), self.userColor.green(), self.userColor.blue())
+            # print('gg', c)
+            # print('ss', uc)
+            mask_c = float(self.mask_weight) / (256 * 256 * 256)
             # print(mask_c)
             cv2.rectangle(mask, tl, br, mask_c, -1)
             cv2.rectangle(im, tl, br, c, -1)
             cv2.rectangle(vis_im, tl, br, uc, -1)
 
+        else:
+            if self.mask_weight:
+                mask_c = float(self.mask_weight)/(256*256*256)
+            else:
+                mask_c = float(0.3)/(256*256*256)
+            for i in range(convert_pts.shape[0]):
+                tl = (convert_pts[i, 0], convert_pts[i, 1])
+                cv2.rectangle(im, tl, tl, c, -1)
+                cv2.rectangle(vis_im, tl, tl, uc, -1)
+                cv2.rectangle(mask, tl, tl, mask_c, -1)
+
+
+        # plt.imshow(im)
+        # # plt.show()
+        # if self.mask_weight:
+        #     mask_c = float(self.mask_weight)/(256*256*256)
+        #     # print(mask_c)
+        #     cv2.rectangle(mask, tl, br, mask_c, -1)
+        #     cv2.rectangle(im, tl, br, c, -1)
+        #     cv2.rectangle(vis_im, tl, br, uc, -1)
+
     def is_same(self, pnt):
-        dx = abs(self.pnt.x() - pnt.x())
-        dy = abs(self.pnt.y() - pnt.y())
-        return dx <= self.width + 1 and dy <= self.width + 1
+        ba = np.zeros((len(self.pnts)))
+        for i in range(len(self.pnts)):
+            lpnt = self.pnts.point(i)
+            dx = abs(lpnt.x() - pnt.x())
+            dy = abs(lpnt.y() - pnt.y())
+            ba[i] = dx <= self.width + 1 and dy <= self.width + 1
+
+        if len(ba[ba==1]) >= 1:
+            return True
+        else:
+            return False
 
     def update_painter(self, painter):
         w = max(3, self.width)
@@ -243,9 +272,20 @@ class StrokeEdit(UserEdit):
         else:
             painter.setPen(QPen(Qt.white, 1))
         painter.setBrush(ca)
-        # painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
-        painter.setPen(QPen(ucc, 4))
-        painter.drawPolyline(self.pnts)
+
+
+        convert_pts = np.zeros((len(self.pnts),2)).astype(np.int32)
+        for i in range(len(self.pnts)):
+            pnt = self.pnts.point(i)
+            x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
+            convert_pts[i, 0] = x1
+            convert_pts[i, 1] = y1
+        convert_pts = convert_pts[::10, :]
+        if len(convert_pts) <= 2:
+            painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
+        else:
+            painter.setPen(QPen(ucc, 4))
+            painter.drawPolyline(self.pnts)
 
 class UIControl:
     def __init__(self, win_size=256, load_size=512, my_mask_cent=0):
@@ -453,7 +493,7 @@ class UIControl:
         # for i in mask.flatten():
         #     if i != -0.5:
         #         print i
-        print(mask[mask!=-1])
+        # print(mask[mask!=-1])
         return im, mask
 
     def reset(self):
