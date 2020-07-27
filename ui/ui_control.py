@@ -330,24 +330,34 @@ class UIControl:
     #         return userColor, width, isNew, mask_weight
 
     def startStroke(self, pnt, color, userColor, width, mask_weight):
+        print('Test')
+        isNew = True
         self.ui_count += 1
         print('process add Point')
-        # for id, ue in enumerate(self.userEdits):
-        #     if ue.is_same(pnt):
-        #         self.userEdit = ue
-        #         isNew = False
-        #         print('select user edit %d\n' % id)
-        #         break
+        self.userEdit = None
+        for id, ue in enumerate(self.userEdits):
+            if ue.is_same(pnt):
+                self.userEdit = ue
+                isNew = False
+                print('select user edit %d\n' % id)
+                break
 
-        self.userEdit = StrokeEdit(self.win_size, self.load_size, self.img_size)
-        # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
-        self.userEdits.append(self.userEdit)
-        print('add user edit %d\n' % len(self.userEdits))
-        # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
-        self.userEdit.start(pnt, color, userColor, width, self.ui_count, mask_weight)
+        if self.userEdit is None:
+            self.userEdit = StrokeEdit(self.win_size, self.load_size, self.img_size)
+            # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
+            self.userEdits.append(self.userEdit)
+            print('add user edit %d\n' % len(self.userEdits))
+            # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+            self.userEdit.start(pnt, color, userColor, width, self.ui_count, mask_weight)
+        else:
+            # userColor, width = self.userEdit.select_old(pnt, self.ui_count)
+            userColor, width, mask_weight = self.userEdit.select_old(pnt, self.ui_count)
+            # return userColor, width, isNew
+
         self.currentUserEdit = self.userEdit
+
         # return userColor, width, isNew
-        return userColor, width, mask_weight
+        return userColor, width, mask_weight, isNew
 
 
     def continueStroke(self, pnt, color, userColor, width):

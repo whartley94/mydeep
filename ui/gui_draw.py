@@ -122,7 +122,7 @@ class GUIDraw(QWidget):
         self.update()
         QApplication.processEvents()
 
-    def update_ui(self, move_point=True):
+    def update_ui(self, move_point=True, continue_point=False):
         if self.ui_mode == 'none':
             return False
         is_predict = False
@@ -138,7 +138,6 @@ class GUIDraw(QWidget):
                 if isNew:
                     is_predict = True
                     # self.predict_color()
-
         if self.ui_mode == 'weighted_point':
             # rgb = np.asarray([snap_qcolor.red(), snap_qcolor.green(), snap_qcolor.blue()])
             # rgb = np.array((snap_qcolor.red(), snap_qcolor.green(), snap_qcolor.blue()), np.uint8)
@@ -163,11 +162,11 @@ class GUIDraw(QWidget):
                     # self.predict_color()
             # print self.brushWidth
             self.emit(SIGNAL('update_slider_position'), self.mask_weight)
-
         if self.ui_mode == 'stroke':
             uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
-            if move_point:
-                self.uiControl.continueStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth)
+            if continue_point:
+                self.user_color, self.brushWidth, self.mask_weight = \
+                    self.uiControl.continueStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth)
             else:
                 if self.my_mask_cent == 0:
                     self.mask_weight = 1 * (255**3)
@@ -176,8 +175,11 @@ class GUIDraw(QWidget):
                     self.mask_weight = self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1]
                 else:
                     assert self.my_mask_cent == 0 or self.my_mask_cent == 1, 'Non-valid my_mask_cent used'
-                self.uiControl.startStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
+                self.user_color, self.brushWidth, self.mask_weight, isNew = \
+                    self.uiControl.startStroke(self.pos, snap_qcolor,
+                                               self.user_color, self.brushWidth, self.mask_weight)
             is_predict = True
+            self.emit(SIGNAL('update_slider_position'), self.mask_weight)
         if self.ui_mode == 'erase':
             isRemoved = self.uiControl.erasePoint(self.pos)
             if isRemoved:
@@ -424,7 +426,7 @@ class GUIDraw(QWidget):
         if self.pos is not None:
             # print(self.pos)
             self.ui_mode = 'stroke'
-            self.update_ui(move_point=True)
+            self.update_ui(continue_point=True)
             # self.compute_result()
             self.update()
 
