@@ -19,8 +19,9 @@ import copy
 
 
 class GUIDraw(QWidget):
-    def __init__(self, model, dist_model=None, load_size=256, win_size=512):
+    def __init__(self, model, dist_model=None, load_size=256, win_size=512, my_mask_cent=0):
         QWidget.__init__(self)
+        self.my_mask_cent = my_mask_cent
         self.model = None
         self.image_file = None
         self.pos = None
@@ -29,7 +30,7 @@ class GUIDraw(QWidget):
         self.win_size = win_size
         self.load_size = load_size
         self.setFixedSize(win_size, win_size)
-        self.uiControl = UIControl(win_size=win_size, load_size=load_size)
+        self.uiControl = UIControl(win_size=win_size, load_size=load_size, my_mask_cent=my_mask_cent)
         self.move(win_size, win_size)
         self.movie = True
         self.init_color()  # initialize color
@@ -148,9 +149,13 @@ class GUIDraw(QWidget):
             if move_point:
                 self.uiControl.movePoint(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
             else:
-                # self.mask_weight = 1
-                print('HGBIN', self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
-                self.mask_weight = self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1]
+                if self.my_mask_cent == 0:
+                    self.mask_weight = 1 * (255**3)
+                elif self.my_mask_cent == 1:
+                    print('HGBIN', self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
+                    self.mask_weight = self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1]
+                else:
+                    assert self.my_mask_cent == 0 or self.my_mask_cent == 1, 'Non-valid my_mask_cent used'
                 # print(QString('background-color: %s' % self.color.name()))
                 self.user_color, self.brushWidth, isNew, self.mask_weight = self.uiControl.addPoint(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
                 if isNew:
@@ -160,7 +165,11 @@ class GUIDraw(QWidget):
             self.emit(SIGNAL('update_slider_position'), self.mask_weight)
 
         if self.ui_mode == 'stroke':
-            self.uiControl.addStroke(self.prev_pos, self.pos, snap_qcolor, self.user_color, self.brushWidth)
+            if move_point:
+                self.uiControl.continueStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth)
+            else:
+                self.uiControl.startStroke(self.pos, snap_qcolor, self.user_color, self.brushWidth, self.mask_weight)
+            is_predict = True
         if self.ui_mode == 'erase':
             isRemoved = self.uiControl.erasePoint(self.pos)
             if isRemoved:
@@ -387,27 +396,37 @@ class GUIDraw(QWidget):
         if pos is not None:
             if event.button() == Qt.LeftButton:
                 self.pos = pos
-                self.ui_mode = 'weighted_point'
+                # self.ui_mode = 'weighted_point'
+                self.ui_mode = 'stroke'
                 self.change_color(pos)
                 self.update_ui(move_point=False)
-                self.compute_result()
+                # self.compute_result()
 
             if event.button() == Qt.RightButton:
                 # draw the stroke
                 self.pos = pos
+                # self.ui_mode = 'stroke'
                 self.ui_mode = 'erase'
                 self.update_ui(move_point=False)
                 self.compute_result()
 
     def mouseMoveEvent(self, event):
+        self.prev_pos = copy.deepcopy(self.pos)
         self.pos = self.valid_point(event.pos())
         if self.pos is not None:
-            if self.ui_mode == 'weighted_point':
-                self.update_ui(move_point=True)
-                self.compute_result()
+            # print(self.pos)
+            self.ui_mode = 'stroke'
+            self.update_ui(move_point=True)
+            # self.compute_result()
+            self.update()
+
+
+            # if self.ui_mode == 'weighted_point':
+            #     self.update_ui(move_point=True)
+            #     self.compute_result()
 
     def mouseReleaseEvent(self, event):
-        pass
+        self.compute_result()
 
     def sizeHint(self):
         return QSize(self.win_size, self.win_size)  # 28 * 8

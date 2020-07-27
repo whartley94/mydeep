@@ -38,9 +38,11 @@ def parse_args():
 
     parser.add_argument('--backend', dest='backend', type=str, help='caffe or pytorch', default='caffe')
     parser.add_argument('--pytorch_maskcent', dest='pytorch_maskcent', help='need to center mask (activate for siggraph_pretrained but not for converted caffemodel)', action='store_true')
+    parser.add_argument('--my_mask_cent', dest='my_mask_cent', type=int, help='realign default values for different models')
 
     # ***** DEPRECATED *****
     parser.add_argument('--load_size', dest='load_size', help='image size', type=int, default=256)
+
 
     args = parser.parse_args()
     return args
@@ -76,7 +78,8 @@ if __name__ == '__main__':
     # initialize application
     app = QApplication(sys.argv)
     window = gui_design.GUIDesign(color_model=colorModel, dist_model=distModel,
-                                  img_file=args.image_file, load_size=args.load_size, win_size=args.win_size)
+                                  img_file=args.image_file, load_size=args.load_size, win_size=args.win_size,
+                                  my_mask_cent=args.my_mask_cent)
     # app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))  # comment this if you do not like dark stylesheet
     app.setWindowIcon(QIcon('imgs/logo.png'))  # load logo
     window.setWindowTitle('iColor')

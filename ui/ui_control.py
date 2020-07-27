@@ -83,6 +83,7 @@ class PointEdit(UserEdit):
             painter.setPen(QPen(Qt.white, 1))
         painter.setBrush(ca)
         painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
+
 class WeightedPointEdit(UserEdit):
     def __init__(self, win_size, load_size, img_size):
         UserEdit.__init__(self, 'weighted_point', win_size, load_size, img_size)
@@ -146,20 +147,197 @@ class WeightedPointEdit(UserEdit):
         painter.setBrush(ca)
         painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
 
+class StrokeEdit(UserEdit):
+    def __init__(self, win_size, load_size, img_size):
+        UserEdit.__init__(self, 'stroke', win_size, load_size, img_size)
+
+    def start(self, pnt, color, userColor, width, ui_count, mask_weight):
+        self.pnt = pnt
+        self.color = color
+        self.userColor = userColor
+        self.width = width
+        self.ui_count = ui_count
+        self.mask_weight = mask_weight
+        # self.pnts = []
+        self.pnts = QPolygon()
+        self.pnts.append(self.pnt)
+
+    def select_old(self, pnt, ui_count):
+        self.pnt = pnt
+        self.ui_count = ui_count
+        return self.userColor, self.width, self.mask_weight
+
+    def continueStroke(self, pnt, ui_count):
+        self.pnt = pnt
+        self.ui_count = ui_count
+        self.pnts.append(pnt)
+        # print(len(self.pnts))
+        return self.userColor, self.width, self.mask_weight
+
+    def update_color(self, color, userColor):
+        self.color = color
+        self.userColor = userColor
+
+    def update_mask_weight(self, mask_weight):
+        self.mask_weight = mask_weight
+
+    def updateInput(self, im, mask, vis_im):
+        w = int(self.width / self.scale)
+        w =0
+        # pnt = self.pnt
+        pnts = self.pnts
+        convert_pts = np.zeros((len(self.pnts),2)).astype(np.int32)
+        for i in range(len(self.pnts)):
+            pnt = pnts.point(i)
+            x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
+            convert_pts[i, 0] = x1
+            convert_pts[i, 1] = y1
+
+        # convert_pts = convert_pts.reshape((-1, 1, 2))
+
+        c = (self.color.red(), self.color.green(), self.color.blue())
+        uc = (self.userColor.red(), self.userColor.green(), self.userColor.blue())
+
+
+        # cv2.polylines(mask, [convert_pts], False, .5, 1)
+        # cv2.polylines(im, [convert_pts], False, c, 1)
+        # cv2.polylines(vis_im, [convert_pts], False, uc, 1)
+        convert_pts = convert_pts[::10, :]
+        for i in range(convert_pts.shape[0]):
+            tl = (convert_pts[i, 0], convert_pts[i, 1])
+            cv2.rectangle(im, tl, tl, c, -1)
+            cv2.rectangle(vis_im, tl, tl, uc, -1)
+            cv2.rectangle(mask, tl, tl, float(0.5)/(256*256*256), -1)
+
+
+        # plt.imshow(im)
+        # plt.show()
+        if self.mask_weight:
+            mask_c = float(self.mask_weight)/(256*256*256)
+            # print(mask_c)
+            cv2.rectangle(mask, tl, br, mask_c, -1)
+            cv2.rectangle(im, tl, br, c, -1)
+            cv2.rectangle(vis_im, tl, br, uc, -1)
+
+    def is_same(self, pnt):
+        dx = abs(self.pnt.x() - pnt.x())
+        dy = abs(self.pnt.y() - pnt.y())
+        return dx <= self.width + 1 and dy <= self.width + 1
+
+    def update_painter(self, painter):
+        w = max(3, self.width)
+        c = self.color
+        r = c.red()
+        g = c.green()
+        b = c.blue()
+        ca = QColor(c.red(), c.green(), c.blue(), 255)
+        uc = self.userColor
+        ur = uc.red()
+        ug = uc.green()
+        ub = uc.blue()
+        ucc = QColor(ur, ug, ub, 255)
+        d_to_black = r * r + g * g + b * b
+        d_to_white = (255 - r) * (255 - r) + (255 - g) * (255 - g) + (255 - r) * (255 - r)
+        if d_to_black > d_to_white:
+            painter.setPen(QPen(Qt.black, 1))
+        else:
+            painter.setPen(QPen(Qt.white, 1))
+        painter.setBrush(ca)
+        # painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
+        painter.setPen(QPen(ucc, 4))
+        painter.drawPolyline(self.pnts)
+
 class UIControl:
-    def __init__(self, win_size=256, load_size=512):
+    def __init__(self, win_size=256, load_size=512, my_mask_cent=0):
         self.win_size = win_size
         self.load_size = load_size
         self.reset()
         self.userEdit = None
         self.userEdits = []
         self.ui_count = 0
+        self.my_mask_cent = my_mask_cent
+        self.currentUserEdit = None
 
     def setImageSize(self, img_size):
         self.img_size = img_size
 
-    def addStroke(self, prevPnt, nextPnt, color, userColor, width):
-        pass
+
+    # def addPoint(self, pnt, color, userColor, width, mask_weight):
+    #     self.ui_count += 1
+    #     print('process add Point')
+    #     self.userEdit = None
+    #     isNew = True
+    #     for id, ue in enumerate(self.userEdits):
+    #         if ue.is_same(pnt):
+    #             self.userEdit = ue
+    #             isNew = False
+    #             print('select user edit %d\n' % id)
+    #             break
+    #
+    #     if self.userEdit is None:
+    #         self.userEdit = WeightedPointEdit(self.win_size, self.load_size, self.img_size)
+    #         # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
+    #         self.userEdits.append(self.userEdit)
+    #         print('add user edit %d\n' % len(self.userEdits))
+    #         # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+    #         self.userEdit.add(pnt, color, userColor, width, self.ui_count, mask_weight)
+    #         # return userColor, width, isNew
+    #         return userColor, width, isNew, mask_weight
+    #     else:
+    #         # userColor, width = self.userEdit.select_old(pnt, self.ui_count)
+    #         userColor, width, mask_weight = self.userEdit.select_old(pnt, self.ui_count)
+    #         # return userColor, width, isNew
+    #         return userColor, width, isNew, mask_weight
+
+    def startStroke(self, pnt, color, userColor, width, mask_weight):
+        self.ui_count += 1
+        print('process add Point')
+        # for id, ue in enumerate(self.userEdits):
+        #     if ue.is_same(pnt):
+        #         self.userEdit = ue
+        #         isNew = False
+        #         print('select user edit %d\n' % id)
+        #         break
+
+        self.userEdit = StrokeEdit(self.win_size, self.load_size, self.img_size)
+        # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
+        self.userEdits.append(self.userEdit)
+        print('add user edit %d\n' % len(self.userEdits))
+        # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+        self.userEdit.start(pnt, color, userColor, width, self.ui_count, mask_weight)
+        self.currentUserEdit = self.userEdit
+        # return userColor, width, isNew
+        return userColor, width, mask_weight
+
+
+    def continueStroke(self, pnt, color, userColor, width):
+        self.ui_count += 1
+        # self.userEdit
+        # print('process add Point')
+        # self.userEdit = None
+        # isNew = True
+        # for id, ue in enumerate(self.userEdits):
+        #     if ue.is_same(pnt):
+        #         self.userEdit = ue
+        #         isNew = False
+        #         print('select user edit %d\n' % id)
+        #         break
+
+        if self.currentUserEdit is None:
+            print('CurrentUserEditIsNone')
+            # self.userEdit = WeightedPointEdit(self.win_size, self.load_size, self.img_size)
+            # # self.userEdit = PointEdit(self.win_size, self.load_size, self.img_size)
+            # self.userEdits.append(self.userEdit)
+            # print('add user edit %d\n' % len(self.userEdits))
+            # # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+            # self.userEdit.add(pnt, color, userColor, width, self.ui_count, mask_weight)
+            # # return userColor, width, isNew
+            # return userColor, width, isNew, mask_weight
+        else:
+            # userColor, width = self.userEdit.select_old(pnt, self.ui_count)
+            userColor, width, mask_weight = self.userEdit.continueStroke(pnt, self.ui_count)
+            # return userColor, width, isNew
+            return userColor, width, mask_weight
 
     def erasePoint(self, pnt):
         isErase = False
@@ -261,10 +439,12 @@ class UIControl:
     def get_input(self):
         h = self.load_size
         w = self.load_size
+
         im = np.zeros((h, w, 3), np.uint8)
         # mask = np.zeros((h, w, 1), np.uint8)
         mask = np.zeros((h, w, 1))
-        mask -= 1
+        mask -= self.my_mask_cent
+        # mask -= 1 #-1 1 model wholeinetsp
         vis_im = np.zeros((h, w, 3), np.uint8)
 
         for ue in self.userEdits:
@@ -273,6 +453,7 @@ class UIControl:
         # for i in mask.flatten():
         #     if i != -0.5:
         #         print i
+        print(mask[mask!=-1])
         return im, mask
 
     def reset(self):

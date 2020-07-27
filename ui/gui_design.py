@@ -9,7 +9,7 @@ import time
 
 class GUIDesign(QWidget):
     def __init__(self, color_model, dist_model=None, img_file=None, load_size=256,
-                 win_size=256, save_all=True):
+                 win_size=256, save_all=True, my_mask_cent=0):
         # draw the layout
         QWidget.__init__(self)
         # main layout
@@ -38,16 +38,19 @@ class GUIDesign(QWidget):
         sliderLayout = self.AddWidget(self.slider_value, 'Value')
         sliderBox.addLayout(sliderLayout)
 
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setTickInterval(256*256*10*4)
-        self.slider.setRange(-256*256*256*4, 256*256*256*4)
-        self.slider.setTickPosition(50000)
-        self.slider.setFixedWidth(self.customPalette.width())
-        self.slider.setFixedHeight(25)
-        # self.slider.setStyleSheet("background-color: grey")
-        sliderLayout = self.AddWidget(self.slider, 'Portion')
-        sliderBox.addLayout(sliderLayout)
-        colorLayout.addLayout(sliderBox)
+        if my_mask_cent == 0:
+            self.slider = None
+        else:
+            self.slider = QSlider(Qt.Horizontal)
+            self.slider.setTickInterval(256*256*10*4)
+            self.slider.setRange(-256*256*256*4, 256*256*256*4)
+            self.slider.setTickPosition(50000)
+            self.slider.setFixedWidth(self.customPalette.width())
+            self.slider.setFixedHeight(25)
+            # self.slider.setStyleSheet("background-color: grey")
+            sliderLayout = self.AddWidget(self.slider, 'Portion')
+            sliderBox.addLayout(sliderLayout)
+            colorLayout.addLayout(sliderBox)
 
         self.colorPush = QPushButton()  # to visualize the selected color
         self.colorPush.setFixedWidth(self.customPalette.width())
@@ -60,7 +63,8 @@ class GUIDesign(QWidget):
         # drawPad layout
         drawPadLayout = QVBoxLayout()
         mainLayout.addLayout(drawPadLayout)
-        self.drawWidget = gui_draw.GUIDraw(color_model, dist_model, load_size=load_size, win_size=win_size)
+        self.drawWidget = gui_draw.GUIDraw(color_model, dist_model, load_size=load_size, win_size=win_size,
+                                           my_mask_cent=my_mask_cent)
         drawPadLayout = self.AddWidget(self.drawWidget, 'Drawing Pad')
         mainLayout.addLayout(drawPadLayout)
 
@@ -98,10 +102,11 @@ class GUIDesign(QWidget):
         self.visWidget.update()
         self.colorPush.clicked.connect(self.drawWidget.change_color)
 
-        self.slider.sliderReleased.connect(self.set_mask_weight)
-        self.slider.valueChanged.connect(self.slider_value_change)
-        # self.slider.sliderReleased.connect(self.slider_value_change)
-        self.connect(self.drawWidget, SIGNAL('update_slider_position'), self.slider_value_set)
+        if my_mask_cent != 0:
+            self.slider.sliderReleased.connect(self.set_mask_weight)
+            self.slider.valueChanged.connect(self.slider_value_change)
+            # self.slider.sliderReleased.connect(self.slider_value_change)
+            self.connect(self.drawWidget, SIGNAL('update_slider_position'), self.slider_value_set)
         # color indicator
         self.connect(self.drawWidget, SIGNAL('update_color'), self.colorPush.setStyleSheet)
         # update result
