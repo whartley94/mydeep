@@ -57,7 +57,7 @@ class GUIDraw(QWidget):
         self.reset()
 
     def get_batches(self, img_dir):
-        self.img_list = glob.glob(os.path.join(img_dir, '*.JPG'))
+        self.img_list = glob.glob(os.path.join(img_dir, '*.JP*'))
         self.total_images = len(self.img_list)
         img_first = self.img_list[0]
         self.init_result(img_first)
@@ -75,6 +75,9 @@ class GUIDraw(QWidget):
 
     def read_image(self, image_file):
         image_file = image_file.decode('utf-8')
+        f = open("UserFile.txt", "a")
+        f.write("Read Image" + str(image_file) + " \n")
+        f.close()
         # self.result = None
         self.image_loaded = True
         self.image_file = image_file
@@ -264,36 +267,38 @@ class GUIDraw(QWidget):
         self.emit(SIGNAL('update_color'), QString('background-color: %s' % self.color.name()))
         self.uiControl.update_color(snap_qcolor, self.user_color)
 
-        # print(self.im_mask0)
-        im, mask = self.uiControl.get_input()
-        gg = mask.transpose((2, 0, 1))
-        gg[gg!=-1] = 1
-        gg[gg==-1] = 0
-        im_lab = color.rgb2lab(im).transpose((2, 0, 1))
-        imab0 = im_lab[1:3, :, :]
-        self.area_model.net_forward(imab0, gg)
-        ab = self.area_model.output_ab
-        just_ab = torch.zeros((1, 3, ab.shape[1], ab.shape[2]))
-        just_ab[:, 1:, :, :] = torch.tensor(ab)
-        just_ab_as_rgb_smoothed = ui.utils.apply_smoothing(just_ab)
-        ab_bins, ab_decoded = ui.utils.zhang_bins(just_ab_as_rgb_smoothed)
-        labels, num_labels = ui.utils.bins_scimage_group_minimal(ab_bins)
+        if self.my_mask_cent == 1:
 
-        sp = self.scale_point(self.pos)
-        label = labels[sp[0], sp[1]]
-        num_same_bin = len(labels[labels == label])
-        print(num_same_bin)
-        total_size = ab.shape[1] * ab.shape[2]
-        print(total_size)
-        weight1 = float(num_same_bin) / total_size
-        print('W1', weight1)
+            # print(self.im_mask0)
+            im, mask = self.uiControl.get_input()
+            gg = mask.transpose((2, 0, 1))
+            gg[gg!=-1] = 1
+            gg[gg==-1] = 0
+            im_lab = color.rgb2lab(im).transpose((2, 0, 1))
+            imab0 = im_lab[1:3, :, :]
+            self.area_model.net_forward(imab0, gg)
+            ab = self.area_model.output_ab
+            just_ab = torch.zeros((1, 3, ab.shape[1], ab.shape[2]))
+            just_ab[:, 1:, :, :] = torch.tensor(ab)
+            just_ab_as_rgb_smoothed = ui.utils.apply_smoothing(just_ab)
+            ab_bins, ab_decoded = ui.utils.zhang_bins(just_ab_as_rgb_smoothed)
+            labels, num_labels = ui.utils.bins_scimage_group_minimal(ab_bins)
 
-        # l = self.im_l
-        # # pred_lab = np.concatenate((l[..., np.newaxis], ab), axis=2)
-        # pred_rgb = (np.clip(color.lab2rgb(pred_lab), 0, 1) * 255).astype('uint8')
-        # plt.imshow(pred_rgb)
-        # plt.show()
-        self.init_weighted_mask(weight1*(255**3))
+            sp = self.scale_point(self.pos)
+            label = labels[sp[0], sp[1]]
+            num_same_bin = len(labels[labels == label])
+            print(num_same_bin)
+            total_size = ab.shape[1] * ab.shape[2]
+            print(total_size)
+            weight1 = float(num_same_bin) / total_size
+            print('W1', weight1)
+
+            # l = self.im_l
+            # # pred_lab = np.concatenate((l[..., np.newaxis], ab), axis=2)
+            # pred_rgb = (np.clip(color.lab2rgb(pred_lab), 0, 1) * 255).astype('uint8')
+            # plt.imshow(pred_rgb)
+            # plt.show()
+            self.init_weighted_mask(weight1*(255**3))
         self.compute_result()
 
     def init_weighted_mask(self, mask_weight):
@@ -420,7 +425,9 @@ class GUIDraw(QWidget):
         painter.fillRect(event.rect(), QColor(49, 54, 49))
         painter.setRenderHint(QPainter.Antialiasing)
         if self.use_gray or self.result is None:
-            im = self.gray_win
+            # im = self.gray_win
+            # im = self.im_win
+            im = cv2.cvtColor(self.im_win, cv2.COLOR_BGR2RGB)
         else:
             im = self.result
 

@@ -89,6 +89,9 @@ class WeightedPointEdit(UserEdit):
         UserEdit.__init__(self, 'weighted_point', win_size, load_size, img_size)
 
     def add(self, pnt, color, userColor, width, ui_count, mask_weight):
+        f = open("UserFile.txt", "a")
+        f.write("OG User Added Point \n")
+        f.close()
         self.pnt = pnt
         self.color = color
         self.userColor = userColor
@@ -97,11 +100,17 @@ class WeightedPointEdit(UserEdit):
         self.mask_weight = mask_weight
 
     def select_old(self, pnt, ui_count):
+        f = open("UserFile.txt", "a")
+        f.write("OG User Selected Old Point \n")
+        f.close()
         self.pnt = pnt
         self.ui_count = ui_count
         return self.userColor, self.width, self.mask_weight
 
     def update_color(self, color, userColor):
+        f = open("UserFile.txt", "a")
+        f.write("OG User Updated Colour \n")
+        f.close()
         self.color = color
         self.userColor = userColor
 
@@ -152,6 +161,9 @@ class StrokeEdit(UserEdit):
         UserEdit.__init__(self, 'stroke', win_size, load_size, img_size)
 
     def start(self, pnt, color, userColor, width, ui_count, mask_weight):
+        f = open("UserFile.txt", "a")
+        f.write("ST User Started Stroke \n")
+        f.close()
         self.pnt = pnt
         self.color = color
         self.userColor = userColor
@@ -163,6 +175,9 @@ class StrokeEdit(UserEdit):
         self.pnts.append(self.pnt)
 
     def select_old(self, pnt, ui_count):
+        f = open("UserFile.txt", "a")
+        f.write("ST User Selected Old Point/Stroke \n")
+        f.close()
         self.pnt = pnt
         self.ui_count = ui_count
         return self.userColor, self.width, self.mask_weight
@@ -175,6 +190,9 @@ class StrokeEdit(UserEdit):
         return self.userColor, self.width, self.mask_weight
 
     def update_color(self, color, userColor):
+        f = open("UserFile.txt", "a")
+        f.write("ST User Updated Colour \n")
+        f.close()
         self.color = color
         self.userColor = userColor
         # print('gg', self.mask_weight)
@@ -287,7 +305,12 @@ class StrokeEdit(UserEdit):
         if len(convert_pts) <= 2:
             painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
         else:
-            painter.setPen(QPen(ucc, 4))
+            if d_to_black > d_to_white:
+                painter.setPen(QPen(Qt.black, 4))
+            else:
+                painter.setPen(QPen(Qt.white, 4))
+            painter.drawPolyline(self.pnts)
+            painter.setPen(QPen(ucc, 2))
             painter.drawPolyline(self.pnts)
 
 class UIControl:
@@ -394,6 +417,9 @@ class UIControl:
             return userColor, width, mask_weight
 
     def erasePoint(self, pnt):
+        f = open("UserFile.txt", "a")
+        f.write("User Erased Point \n")
+        f.close()
         isErase = False
         for id, ue in enumerate(self.userEdits):
             if ue.is_same(pnt):

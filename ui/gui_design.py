@@ -70,8 +70,8 @@ class GUIDesign(QWidget):
 
         drawPadMenu = QHBoxLayout()
 
-        self.bGray = QCheckBox("&Gray")
-        self.bGray.setToolTip('show gray-scale image')
+        self.bGray = QCheckBox("&Ground Truth")
+        self.bGray.setToolTip('show Ground Truth image')
 
         self.bLoad = QPushButton('&Load')
         self.bLoad.setToolTip('load an input image')
@@ -163,6 +163,9 @@ class GUIDesign(QWidget):
         self.slider_value_change()
 
     def set_mask_weight(self):
+        f = open("UserFile.txt", "a")
+        f.write("User Changed Slider \n")
+        f.close()
         self.drawWidget.set_weighted_mask(self.slider.value())
 
     def reset(self):
@@ -181,18 +184,24 @@ class GUIDesign(QWidget):
 
     def quit(self):
         print('time spent = %3.3f' % (time.time() - self.start_t))
+        f = open("UserFile.txt", "a")
+        f.write('time spent = %3.3f \n' % (time.time() - self.start_t))
+        f.close()
         self.close()
 
     def save(self):
         print('time spent = %3.3f' % (time.time() - self.start_t))
-        self.drawWidget.save_result()
-        # self.drawWidget.nextImage()
+        f = open("UserFile.txt", "a")
+        f.write('time spent = %3.3f \n' % (time.time() - self.start_t))
+        f.close()
+        # self.drawWidget.save_result()
+        self.drawWidget.nextImage()
 
     def load(self):
-        self.drawWidget.load_image()
-        # imgs_path = unicode(QFileDialog.getExistingDirectory(self, 'load an folder'))
-        # print(imgs_path)
-        # self.drawWidget.get_batches(imgs_path)
+        # self.drawWidget.load_image()
+        imgs_path = unicode(QFileDialog.getExistingDirectory(self, 'load an folder'))
+        print(imgs_path)
+        self.drawWidget.get_batches(imgs_path)
 
     def change_color(self):
         print('change color')
