@@ -33,7 +33,9 @@ def parse_args():
     # PyTorch (same model used for both)
     parser.add_argument('--color_model', dest='color_model', help='colorization model', type=str,
                         default='./models/pytorch/caffemodel.pth')
-    parser.add_argument('--dist_model', dest='color_model', help='colorization distribution prediction model', type=str,
+    parser.add_argument('--dist_model', dest='dist_model', help='colorization distribution prediction model', type=str,
+                        default='./models/pytorch/caffemodel.pth')
+    parser.add_argument('--area_model', dest='area_model', help='colorization distribution prediction model', type=str,
                         default='./models/pytorch/caffemodel.pth')
 
     parser.add_argument('--backend', dest='backend', type=str, help='caffe or pytorch', default='caffe')
@@ -71,13 +73,16 @@ if __name__ == '__main__':
         colorModel.prep_net(gpu_id=args.gpu, path=args.color_model)
 
         distModel = CI.ColorizeImageTorchDist(Xd=args.load_size,maskcent=args.pytorch_maskcent)
-        distModel.prep_net(gpu_id=args.gpu, path=args.color_model, dist=True)
+        distModel.prep_net(gpu_id=args.gpu, path=args.dist_model, dist=True)
+
+        areaModel = CI.ColorizeImageTorch(Xd=args.load_size,maskcent=args.pytorch_maskcent)
+        areaModel.prep_net(gpu_id=args.gpu, path=args.area_model)
     else:
         print('backend type [%s] not found!' % args.backend)
 
     # initialize application
     app = QApplication(sys.argv)
-    window = gui_design.GUIDesign(color_model=colorModel, dist_model=distModel,
+    window = gui_design.GUIDesign(color_model=colorModel, dist_model=distModel, area_model=areaModel,
                                   img_file=args.image_file, load_size=args.load_size, win_size=args.win_size,
                                   my_mask_cent=args.my_mask_cent)
     # app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))  # comment this if you do not like dark stylesheet

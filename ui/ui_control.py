@@ -177,6 +177,9 @@ class StrokeEdit(UserEdit):
     def update_color(self, color, userColor):
         self.color = color
         self.userColor = userColor
+        # print('gg', self.mask_weight)
+        # self.mask_weight = .54*(255**3)
+        # return self.mask_weight
 
     def update_mask_weight(self, mask_weight):
         self.mask_weight = mask_weight
@@ -348,6 +351,7 @@ class UIControl:
             self.userEdits.append(self.userEdit)
             print('add user edit %d\n' % len(self.userEdits))
             # self.userEdit.add(pnt, color, userColor, width, self.ui_count)
+            print('SPECI', mask_weight)
             self.userEdit.start(pnt, color, userColor, width, self.ui_count, mask_weight)
         else:
             # userColor, width = self.userEdit.select_old(pnt, self.ui_count)
@@ -433,7 +437,9 @@ class UIControl:
         self.userEdit.add(pnt, color, userColor, width, self.ui_count, mask_weight)
 
     def update_color(self, color, userColor):
-        self.userEdit.update_color(color, userColor)
+        mask_weight = self.userEdit.update_color(color, userColor)
+        print('UC', mask_weight)
+        return mask_weight
 
     def update_mask_weight(self, mask_weight):
         # Put for loop here over all user edits??

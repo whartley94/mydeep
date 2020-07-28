@@ -8,7 +8,7 @@ import time
 
 
 class GUIDesign(QWidget):
-    def __init__(self, color_model, dist_model=None, img_file=None, load_size=256,
+    def __init__(self, color_model, dist_model=None, area_model=None, img_file=None, load_size=256,
                  win_size=256, save_all=True, my_mask_cent=0):
         # draw the layout
         QWidget.__init__(self)
@@ -63,7 +63,7 @@ class GUIDesign(QWidget):
         # drawPad layout
         drawPadLayout = QVBoxLayout()
         mainLayout.addLayout(drawPadLayout)
-        self.drawWidget = gui_draw.GUIDraw(color_model, dist_model, load_size=load_size, win_size=win_size,
+        self.drawWidget = gui_draw.GUIDraw(color_model, dist_model, area_model, load_size=load_size, win_size=win_size,
                                            my_mask_cent=my_mask_cent)
         drawPadLayout = self.AddWidget(self.drawWidget, 'Drawing Pad')
         mainLayout.addLayout(drawPadLayout)

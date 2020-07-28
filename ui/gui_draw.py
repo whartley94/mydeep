@@ -10,22 +10,25 @@ from .ui_control import UIControl
 
 from data import lab_gamut
 from skimage import color
+import ui.utils
 import os
 import datetime
 import glob
 import sys
 import matplotlib.pyplot as plt
 import copy
+import torch
 
 
 class GUIDraw(QWidget):
-    def __init__(self, model, dist_model=None, load_size=256, win_size=512, my_mask_cent=0):
+    def __init__(self, model, dist_model=None, area_model=None, load_size=256, win_size=512, my_mask_cent=0):
         QWidget.__init__(self)
         self.my_mask_cent = my_mask_cent
         self.model = None
         self.image_file = None
         self.pos = None
         self.model = model
+        self.area_model = area_model
         self.dist_model = dist_model  # distribution predictor, could be empty
         self.win_size = win_size
         self.load_size = load_size
@@ -117,6 +120,9 @@ class GUIDraw(QWidget):
         if (self.dist_model is not None):
             self.dist_model.set_image(self.im_rgb)
             self.predict_color()
+
+        if (self.area_model is not None):
+            self.area_model.load_image(image_file)
 
     def update_im(self):
         self.update()
@@ -237,6 +243,7 @@ class GUIDraw(QWidget):
             c = np.array((snap_color.red(), snap_color.green(), snap_color.blue()), np.uint8)
 
             self.emit(SIGNAL('update_ab'), c)
+            # self.emit(SIGNAL('update_slider_position'), self.mask_weight)
 
     def calibrate_color(self, c, pos):
         x, y = self.scale_point(pos)
@@ -256,7 +263,48 @@ class GUIDraw(QWidget):
         self.color = snap_qcolor
         self.emit(SIGNAL('update_color'), QString('background-color: %s' % self.color.name()))
         self.uiControl.update_color(snap_qcolor, self.user_color)
+
+        # print(self.im_mask0)
+        im, mask = self.uiControl.get_input()
+        gg = mask.transpose((2, 0, 1))
+        gg[gg!=-1] = 1
+        gg[gg==-1] = 0
+        im_lab = color.rgb2lab(im).transpose((2, 0, 1))
+        imab0 = im_lab[1:3, :, :]
+        self.area_model.net_forward(imab0, gg)
+        ab = self.area_model.output_ab
+        just_ab = torch.zeros((1, 3, ab.shape[1], ab.shape[2]))
+        just_ab[:, 1:, :, :] = torch.tensor(ab)
+        just_ab_as_rgb_smoothed = ui.utils.apply_smoothing(just_ab)
+        ab_bins, ab_decoded = ui.utils.zhang_bins(just_ab_as_rgb_smoothed)
+        labels, num_labels = ui.utils.bins_scimage_group_minimal(ab_bins)
+
+        sp = self.scale_point(self.pos)
+        label = labels[sp[0], sp[1]]
+        num_same_bin = len(labels[labels == label])
+        print(num_same_bin)
+        total_size = ab.shape[1] * ab.shape[2]
+        print(total_size)
+        weight1 = float(num_same_bin) / total_size
+        print('W1', weight1)
+
+        # l = self.im_l
+        # # pred_lab = np.concatenate((l[..., np.newaxis], ab), axis=2)
+        # pred_rgb = (np.clip(color.lab2rgb(pred_lab), 0, 1) * 255).astype('uint8')
+        # plt.imshow(pred_rgb)
+        # plt.show()
+        self.init_weighted_mask(weight1*(255**3))
         self.compute_result()
+
+    def init_weighted_mask(self, mask_weight):
+        uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
+        if self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1] == 1.0:
+            self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1] = mask_weight
+            self.uiControl.update_mask_weight(self.histogram_bins[uc[0]-1, uc[1]-1, uc[2]-1])
+            self.emit(SIGNAL('update_slider_position'), mask_weight)
+        else:
+            self.uiControl.update_mask_weight(self.histogram_bins[uc[0] - 1, uc[1] - 1, uc[2] - 1])
+            self.emit(SIGNAL('update_slider_position'), self.histogram_bins[uc[0] - 1, uc[1] - 1, uc[2] - 1])
 
     def set_weighted_mask(self, mask_weight):
         uc = (self.user_color.red(), self.user_color.green(), self.user_color.blue())
@@ -406,8 +454,10 @@ class GUIDraw(QWidget):
         if pos is not None:
             if event.button() == Qt.LeftButton:
                 self.pos = pos
-                # self.ui_mode = 'weighted_point'
-                self.ui_mode = 'stroke'
+                if self.my_mask_cent == 0:
+                    self.ui_mode = 'weighted_point'
+                else:
+                    self.ui_mode = 'stroke'
                 self.change_color(pos)
                 self.update_ui(move_point=False)
                 # self.compute_result()
@@ -425,15 +475,18 @@ class GUIDraw(QWidget):
         self.pos = self.valid_point(event.pos())
         if self.pos is not None:
             # print(self.pos)
-            self.ui_mode = 'stroke'
-            self.update_ui(continue_point=True)
-            # self.compute_result()
-            self.update()
+
+            if self.my_mask_cent == 0:
+                self.update_ui(move_point=True)
+                self.compute_result()
+            else:
+                self.ui_mode = 'stroke'
+                self.update_ui(continue_point=True)
+                # self.compute_result()
+                self.update()
 
 
-            # if self.ui_mode == 'weighted_point':
-            #     self.update_ui(move_point=True)
-            #     self.compute_result()
+
 
     def mouseReleaseEvent(self, event):
         self.compute_result()
