@@ -75,7 +75,9 @@ class GUIDraw(QWidget):
 
     def read_image(self, image_file):
         image_file = image_file.decode('utf-8')
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("Read Image" + str(image_file) + " \n")
         f.close()
         # self.result = None
@@ -328,7 +330,7 @@ class GUIDraw(QWidget):
         path = os.path.abspath(self.image_file)
         path, ext = os.path.splitext(path)
 
-        suffix = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
         save_path = "_".join([path, self.method, suffix])
 
         print('saving result to <%s>\n' % save_path)

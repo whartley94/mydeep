@@ -2,6 +2,8 @@ import numpy as np
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import cv2
+import datetime
+
 import matplotlib.pyplot as plt
 
 
@@ -89,7 +91,9 @@ class WeightedPointEdit(UserEdit):
         UserEdit.__init__(self, 'weighted_point', win_size, load_size, img_size)
 
     def add(self, pnt, color, userColor, width, ui_count, mask_weight):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("OG User Added Point \n")
         f.close()
         self.pnt = pnt
@@ -100,7 +104,9 @@ class WeightedPointEdit(UserEdit):
         self.mask_weight = mask_weight
 
     def select_old(self, pnt, ui_count):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("OG User Selected Old Point \n")
         f.close()
         self.pnt = pnt
@@ -108,7 +114,9 @@ class WeightedPointEdit(UserEdit):
         return self.userColor, self.width, self.mask_weight
 
     def update_color(self, color, userColor):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("OG User Updated Colour \n")
         f.close()
         self.color = color
@@ -161,7 +169,9 @@ class StrokeEdit(UserEdit):
         UserEdit.__init__(self, 'stroke', win_size, load_size, img_size)
 
     def start(self, pnt, color, userColor, width, ui_count, mask_weight):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("ST User Started Stroke \n")
         f.close()
         self.pnt = pnt
@@ -175,7 +185,9 @@ class StrokeEdit(UserEdit):
         self.pnts.append(self.pnt)
 
     def select_old(self, pnt, ui_count):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("ST User Selected Old Point/Stroke \n")
         f.close()
         self.pnt = pnt
@@ -190,7 +202,9 @@ class StrokeEdit(UserEdit):
         return self.userColor, self.width, self.mask_weight
 
     def update_color(self, color, userColor):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("ST User Updated Colour \n")
         f.close()
         self.color = color
@@ -223,7 +237,7 @@ class StrokeEdit(UserEdit):
         # cv2.polylines(mask, [convert_pts], False, .5, 1)
         # cv2.polylines(im, [convert_pts], False, c, 1)
         # cv2.polylines(vis_im, [convert_pts], False, uc, 1)
-        convert_pts = convert_pts[::10, :]
+        convert_pts = convert_pts[::30, :]
         if len(convert_pts) <= 2:
             pnt = self.pnts.point(0)
             x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
@@ -417,7 +431,9 @@ class UIControl:
             return userColor, width, mask_weight
 
     def erasePoint(self, pnt):
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write("User Erased Point \n")
         f.close()
         isErase = False

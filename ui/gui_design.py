@@ -5,6 +5,7 @@ from . import gui_vis
 from . import gui_gamut
 from . import gui_palette
 import time
+import datetime
 
 
 class GUIDesign(QWidget):
@@ -163,8 +164,10 @@ class GUIDesign(QWidget):
         self.slider_value_change()
 
     def set_mask_weight(self):
-        f = open("UserFile.txt", "a")
-        f.write("User Changed Slider \n")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
+        f.write("ST User Changed Slider \n")
         f.close()
         self.drawWidget.set_weighted_mask(self.slider.value())
 
@@ -184,14 +187,18 @@ class GUIDesign(QWidget):
 
     def quit(self):
         print('time spent = %3.3f' % (time.time() - self.start_t))
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write('time spent = %3.3f \n' % (time.time() - self.start_t))
         f.close()
         self.close()
 
     def save(self):
         print('time spent = %3.3f' % (time.time() - self.start_t))
-        f = open("UserFile.txt", "a")
+        suffix = datetime.datetime.now().strftime("%y%m%d_%H")
+        save_path = "_".join([suffix, "UserFile.txt"])
+        f = open(save_path, "a")
         f.write('time spent = %3.3f \n' % (time.time() - self.start_t))
         f.close()
         # self.drawWidget.save_result()
