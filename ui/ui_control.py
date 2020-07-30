@@ -237,7 +237,7 @@ class StrokeEdit(UserEdit):
         # cv2.polylines(mask, [convert_pts], False, .5, 1)
         # cv2.polylines(im, [convert_pts], False, c, 1)
         # cv2.polylines(vis_im, [convert_pts], False, uc, 1)
-        convert_pts = convert_pts[::30, :]
+        convert_pts = convert_pts[::16, :]
         if len(convert_pts) <= 2:
             pnt = self.pnts.point(0)
             x1, y1 = self.scale_point(pnt.x(), pnt.y(), -w)
