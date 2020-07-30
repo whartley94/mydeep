@@ -206,7 +206,11 @@ class GUIDesign(QWidget):
 
     def load(self):
         # self.drawWidget.load_image()
-        imgs_path = unicode(QFileDialog.getExistingDirectory(self, 'load an folder'))
+        machine='win'
+        if machine=='unix':
+            imgs_path = unicode(QFileDialog.getExistingDirectory(self, 'load an folder'))
+        elif machine=='win':
+            imgs_path = (QFileDialog.getExistingDirectory(self, 'load an folder'))
         print(imgs_path)
         self.drawWidget.get_batches(imgs_path)
 
