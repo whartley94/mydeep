@@ -44,7 +44,7 @@ class GUIDesign(QWidget):
         else:
             self.slider = QSlider(Qt.Horizontal)
             self.slider.setTickInterval(256*256*10*4)
-            self.slider.setRange(-256*256*256*4, 256*256*256*4)
+            self.slider.setRange(-256*256*256*2, 256*256*256*1.2)
             self.slider.setTickPosition(50000)
             self.slider.setFixedWidth(self.customPalette.width())
             self.slider.setFixedHeight(25)
