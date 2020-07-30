@@ -1,3 +1,12 @@
+# IDEEP SEP
+# --backend pytorch --cpu_mode --color_model /Users/Will/Documents/Uni/MscEdinburgh/Diss/checkpoints_from_pd/wholeinetsp/latest_net_G.pth  --win_size 400 --my_mask_cent 1
+
+# ORIG PT
+# --backend pytorch --cpu_mode --win_size 400 --my_mask_cent 0 --pytorch_maskcent --color_model ./models/pytorch/pytorch_trained.pth
+
+# ORIG CAFFE
+# --backend pytorch --cpu_mode  --win_size 400 --my_mask_cent 0
+
 from __future__ import print_function
 import sys
 import argparse
