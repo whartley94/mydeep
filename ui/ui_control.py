@@ -276,12 +276,13 @@ class StrokeEdit(UserEdit):
         #     cv2.rectangle(vis_im, tl, br, uc, -1)
 
     def is_same(self, pnt):
+        widthy = 4
         ba = np.zeros((len(self.pnts)))
         for i in range(len(self.pnts)):
             lpnt = self.pnts.point(i)
             dx = abs(lpnt.x() - pnt.x())
             dy = abs(lpnt.y() - pnt.y())
-            ba[i] = dx <= self.width + 1 and dy <= self.width + 1
+            ba[i] = dx <= widthy + 1 and dy <= widthy + 1
 
         if len(ba[ba==1]) >= 1:
             return True
@@ -320,9 +321,9 @@ class StrokeEdit(UserEdit):
             painter.drawRoundedRect(self.pnt.x() - w, self.pnt.y() - w, 1 + 2 * w, 1 + 2 * w, 2, 2)
         else:
             if d_to_black > d_to_white:
-                painter.setPen(QPen(Qt.black, 4))
+                painter.setPen(QPen(Qt.black, 5))
             else:
-                painter.setPen(QPen(Qt.white, 4))
+                painter.setPen(QPen(Qt.white, 5))
             painter.drawPolyline(self.pnts)
             painter.setPen(QPen(ucc, 2))
             painter.drawPolyline(self.pnts)
