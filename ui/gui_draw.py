@@ -71,7 +71,7 @@ class GUIDraw(QWidget):
         img_current = self.img_list[self.image_id]
         # self.reset()
         self.init_result(img_current)
-        self.reset_timer()
+        # self.reset_timer()
 
     def read_image(self, image_file):
         image_file = image_file.decode('utf-8')
